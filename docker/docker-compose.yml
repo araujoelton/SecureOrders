@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: yourapp-postgres
+    environment:
+      POSTGRES_USER: yourapp
+      POSTGRES_PASSWORD: yourapp
+      POSTGRES_DB: yourappdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - yourapp_pgdata:/var/lib/postgresql/data
+
+  pgadmin:
+     image: dpage/pgadmin4:latest
+     container_name: yourapp-pgadmin
+     environment:
+        PGADMIN_DEFAULT_EMAIL: admin@local.com
+        PGADMIN_DEFAULT_PASSWORD: admin
+     ports:
+        - "5050:80"
+     depends_on:
+          - postgres
+     volumes:
+        - yourapp_pgadmin:/var/lib/pgadmin
+
+  redis:
+    image: redis:7-alpine
+    container_name: yourapp-redis
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ..
+      dockerfile: src/SecureOrders.Api/Dockerfile
+    container_name: yourapp-api
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=yourappdb;Username=yourapp;Password=yourapp
+      Redis__ConnectionString: redis:6379
+      Redis__InstanceName: SecureOrders_
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  yourapp_pgdata:
+  yourapp_pgadmin:
