@@ -1,5 +1,3 @@
-using SecureOrders.Application.Auth.Contracts;
-
 namespace SecureOrders.Application.Auth;
 
 public interface IAuthService

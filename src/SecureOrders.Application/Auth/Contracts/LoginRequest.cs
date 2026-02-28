@@ -1,3 +1,8 @@
-namespace SecureOrders.Application.Auth.Contracts;
+using System.ComponentModel.DataAnnotations;
 
-public sealed record LoginRequest(string Username, string Password);
+namespace SecureOrders.Application.Auth;
+
+public sealed record LoginRequest(
+    [Required, EmailAddress] string Email,
+    [Required] string Password
+);

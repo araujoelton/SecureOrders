@@ -1,3 +1,3 @@
-namespace SecureOrders.Application.Auth.Contracts;
+namespace SecureOrders.Application.Auth;
 
-public sealed record AuthResponse(string AccessToken, string RefreshToken, DateTime ExpiresAtUtc);
+public sealed record AuthResponse(string AccessToken, string RefreshToken, int ExpiresIn);

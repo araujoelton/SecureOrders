@@ -5,10 +5,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
 using System.Text.Json;
-using SecureOrders.Api.Options;
+using SecureOrders.Api.Swagger;
 using SecureOrders.Application.Auth;
 using SecureOrders.Infrastructure;
-using SecureOrders.Infrastructure.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,13 +34,12 @@ builder.Services.AddSwaggerGen(c =>
             { schemeRef, new List<string>() }
         };
     });
+
+    c.OperationFilter<AllowAnonymousOperationFilter>();
 });
 
-builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection(RedisOptions.SectionName));
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
-
-var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
-    ?? throw new InvalidOperationException("Jwt section not configured.");
+var authOptions = builder.Configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>()
+    ?? throw new InvalidOperationException("Auth section not configured.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
@@ -49,13 +47,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         opt.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = jwtOptions.Issuer,
+            ValidIssuer = authOptions.Jwt.Issuer,
 
             ValidateAudience = true,
-            ValidAudience = jwtOptions.Audience,
+            ValidAudience = authOptions.Jwt.Audience,
 
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authOptions.Jwt.SigningKey)),
 
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
@@ -63,17 +61,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-
-builder.Services.AddSingleton(new AuthService.JwtSettings(
-    jwtOptions.Issuer,
-    jwtOptions.Audience,
-    jwtOptions.SigningKey,
-    jwtOptions.AccessTokenMinutes,
-    jwtOptions.RefreshTokenDays
-));
-
-builder.Services.AddScoped<IRefreshTokenStore, RedisRefreshTokenStore>();
-builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
